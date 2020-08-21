@@ -239,8 +239,6 @@ obj-$(CONFIG_KSU) += kernelsu/
 #	obj-$(CONFIG_GATOR)				+= gator/
 #endif
 
-obj-y				+= kperfmon/
-
 obj-$(CONFIG_SEC_EXT)		+= samsung/
 
 #TZIC
