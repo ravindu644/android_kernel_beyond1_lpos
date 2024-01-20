@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # Code for validating instrumention (i.e. for detecting bugs in instrument.py).
 import re
 import multiprocessing
