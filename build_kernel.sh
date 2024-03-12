@@ -13,6 +13,7 @@ work_dir="$(pwd)"
 dt_tool="$work_dir/binaries"
 repacker="$dt_tool/AIK/repackimg.sh"
 AVBTOOL="$dt_tool/avbtool"
+VBMETA="$dt_tool/addons/vbmeta.img"
 
 #setting up executable permissions
 sudo chmod +775 -R "$work_dir/binaries/"
@@ -97,7 +98,7 @@ packing() {
     if [ ! -d "${DEVICE}/${SELINUX_STATUS}" ]; then
         mkdir "${DEVICE}/${SELINUX_STATUS}"
     fi
-    tar -cvf "LPoS ${KERNEL_VERSION} [${DEVICE}] - ${SELINUX_STATUS}.tar" boot.img dt.img ; rm boot.img dt.img
+    tar -cvf "LPoS ${KERNEL_VERSION} [${DEVICE}] - ${SELINUX_STATUS}.tar" boot.img dt.img "${VBMETA}" ; rm boot.img dt.img
     mv "LPoS ${KERNEL_VERSION} [${DEVICE}] - ${SELINUX_STATUS}.tar" "${DEVICE}/${SELINUX_STATUS}"
 }
 
