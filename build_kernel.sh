@@ -98,7 +98,8 @@ packing() {
     if [ ! -d "${DEVICE}/${SELINUX_STATUS}" ]; then
         mkdir "${DEVICE}/${SELINUX_STATUS}"
     fi
-    tar -cvf "LPoS ${KERNEL_VERSION} [${DEVICE}] - ${SELINUX_STATUS}.tar" boot.img dt.img "${VBMETA}" ; rm boot.img dt.img
+    cp "${VBMETA}" .
+    tar -cvf "LPoS ${KERNEL_VERSION} [${DEVICE}] - ${SELINUX_STATUS}.tar" boot.img dt.img vbmeta.img ; rm boot.img dt.img vbmeta.img
     mv "LPoS ${KERNEL_VERSION} [${DEVICE}] - ${SELINUX_STATUS}.tar" "${DEVICE}/${SELINUX_STATUS}"
 }
 
