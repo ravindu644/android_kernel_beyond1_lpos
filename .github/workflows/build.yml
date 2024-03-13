@@ -27,13 +27,20 @@ jobs:
         run: |
           echo "KERNEL_VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
           
-      - name: Run build
+      - name: Building LPoS
         run: |
           export PATH=$HOME/:$PWD/toolchain/proton-clang/bin:$PATH
           bash build_kernel.sh -c
+
+      - name: Building LPoS + KernelSU
+        run: |
+          export PATH=$HOME/:$PWD/toolchain/proton-clang/bin:$PATH
+          bash build_kernel.sh -k          
 
       - name: Upload kernel
         uses: actions/upload-artifact@v3.1.2
         with:
           name: "LPoS ${{ env.KERNEL_VERSION }} [S10]"
-          path: out/*.xz
+          path: |
+            out/LPoS*.xz
+            out/KSU*.xz

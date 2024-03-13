@@ -5673,6 +5673,12 @@ CONFIG_KPERFMON=y
 CONFIG_SPU_VERIFY=y
 
 #
+# KernelSU
+#
+CONFIG_KSU=n
+CONFIG_KSU_DEBUG=n
+
+#
 # Firmware Drivers
 #
 CONFIG_ARM_PSCI_FW=y

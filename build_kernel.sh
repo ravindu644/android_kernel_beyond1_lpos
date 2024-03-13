@@ -12,13 +12,14 @@ work_dir="$(pwd)"
 #path for binary files
 dt_tool="$work_dir/binaries"
 repacker="$dt_tool/AIK/repackimg.sh"
-AVBTOOL="$dt_tool/avbtool"
 VBMETA="$dt_tool/addons/vbmeta.img"
 
 #setting up executable permissions
 sudo chmod +775 -R "$work_dir/binaries/"
 
 #exporting variables
+export current_datetime=$(date +"%Y-%m-%d_%H-%M-%S")
+export LPOS_KERNEL_VERSION="v8.5.7"
 export DEVICE="S10"
 export KBUILD_BUILD_USER="@ravindu644"
 export ARGS="
@@ -42,15 +43,7 @@ LLVM_DIS=llvm-dis
 
 #your defconfig
 export exynos_defconfig=exynos9820-beyond1lte_defconfig
-
-#size in bytes for boot and recovery images.
-#beyond2
-
-export BOOT_SIZE="57671680"
-export RECOVERY_SIZE="67633152"
-
-#cleaning output dir before building
-rm -rf out && mkdir out
+export config_file="arch/arm64/configs/$exynos_defconfig"
 
 dtb_img() {
     sudo chmod +777 $dt_tool/* -R
@@ -68,26 +61,6 @@ packing() {
     echo -e "\n\n[+] Repacking Done..!"
     mv "$dt_tool/AIK/image-new.img" "$work_dir/out/boot.img"
 
-    key() {
-        if [ ! -d "$work_dir/binaries/key" ]; then
-            mkdir "$work_dir/binaries/key"
-        fi
-        if [ ! -f "$work_dir/binaries/key/sign.pem" ]; then
-            echo -e "\n\n[+] Generating a signing key.."
-            openssl genrsa -f4 -out "$work_dir/binaries/key/sign.pem" 4096
-        fi
-    }
-    key
-
-    sign() {
-        echo -e "\n\n[+] Signing New Boot image..."
-        python3 "$AVBTOOL" extract_public_key --key "$work_dir/binaries/key/sign.pem" --output "$work_dir/binaries/key/sign.pub.bin"
-        sudo chmod +777 "$work_dir/out/boot.img"
-        python3 "$AVBTOOL" add_hash_footer --partition_name boot --partition_size "$BOOT_SIZE" --image "$work_dir/out/boot.img" --key "$work_dir/binaries/key/sign.pem" --algorithm SHA256_RSA4096
-    }
-    sign
-
-    echo -e "\n\n[+] Signing Done..!"
     echo -e "\n\n[i] Creating a Flashable tar..!"
 
     cd "$work_dir/out"
@@ -99,15 +72,16 @@ packing() {
         mkdir "${DEVICE}/${SELINUX_STATUS}"
     fi
     cp "${VBMETA}" .
-    tar -cvf "LPoS ${KERNEL_VERSION} [${DEVICE}] - ${SELINUX_STATUS}.tar" boot.img dt.img vbmeta.img ; rm boot.img dt.img vbmeta.img
-    mv "LPoS ${KERNEL_VERSION} [${DEVICE}] - ${SELINUX_STATUS}.tar" "${DEVICE}/${SELINUX_STATUS}"
+    sudo chmod +777 *
+    tar -cvf "LPoS ${LPOS_KERNEL_VERSION} [${DEVICE}] - ${SELINUX_STATUS}.tar" boot.img dt.img vbmeta.img ; rm boot.img dt.img vbmeta.img
+    mv "LPoS ${LPOS_KERNEL_VERSION} [${DEVICE}] - ${SELINUX_STATUS}.tar" "${DEVICE}/${SELINUX_STATUS}"
 }
 
 tar_xz() {
     cd "$work_dir/out"
     tar -cvf "LPoS [${DEVICE}].tar" ./*
     xz -9 --threads=0 "LPoS [${DEVICE}].tar"
-    mv "LPoS [${DEVICE}].tar.xz" "LPoS [${DEVICE}].xz"
+    mv "LPoS [${DEVICE}].tar.xz" "LPoS [${DEVICE}]-${current_datetime}.xz"
     cd "$work_dir"
     echo -e "\n\n[i] Compilation Done..🌛"
 }
@@ -144,13 +118,33 @@ permissive() {
 }
 
 deep_clean(){
+    cd "$work_dir"
+    echo -e "[i] Cleaning Up...\n\n"
     make ${ARGS} clean && make ${ARGS} mrproper
 }
 
+lpos_defaults() {
+
+    replace_config_option() {
+        sed -i "s/^$1=.*/$1=$2/" "$config_file"
+    }
+    replace_config_option "CONFIG_KSU" "n"
+    replace_config_option "CONFIG_SECURITY_SELINUX_ALWAYS_PERMISSIVE" "n"
+}
+
+
 
 clean_build() {
+    cd "$work_dir"
     make ${ARGS} clean && make ${ARGS} mrproper
-    patch -p1 < "$work_dir/ksu.patch" || true
+    lpos_defaults
+
+    #patching allowlist for non-gki
+    if [ ! -f ".allowlist_patched" ]; then
+        patch -p1 < "$work_dir/ksu.patch"
+        echo "1" > ".allowlist_patched"
+    fi
+
     make ${ARGS} "$exynos_defconfig"
     make ${ARGS} -j"$(nproc)"
     dtb_img
@@ -162,11 +156,133 @@ clean_build() {
 }
 
 dirty_build() {
+    cd "$work_dir"
     make ${ARGS} "$exynos_defconfig"
     make ${ARGS} -j"$(nproc)"
     dtb_img
     mv "$work_dir/arch/arm64/boot/Image" "$dt_tool/AIK/split_img/boot.img-kernel"
     checks
+}
+
+build_ksu(){
+    #function for edit the config
+    config_file="arch/arm64/configs/$exynos_defconfig"
+    replace_config_option_ksu() {
+    sed -i "s/^$1=.*/$1=$2/" "$config_file"
+    }
+
+    #ksu + enforcing
+    ksu_enforce(){
+        cd "$work_dir"
+        replace_config_option_ksu "CONFIG_KSU" "y"
+        replace_config_option_ksu "CONFIG_SECURITY_SELINUX_ALWAYS_PERMISSIVE" "n"
+        export SELINUX_STATUS="Enforcing"
+    }
+
+    #building with ksu + enforce
+    build_enforce() {
+        cd "$work_dir"
+        echo -e "\n\n[+] Compiling KernelSU + Enforcing..\n\n"
+        make ${ARGS} "$exynos_defconfig"
+        make ${ARGS} -j"$(nproc)"
+        dtb_img
+        mv "$work_dir/arch/arm64/boot/Image" "$dt_tool/AIK/split_img/boot.img-kernel"
+        checks_ksu
+    }
+
+    #ksu + Permissive
+    ksu_permissive(){  
+        cd "$work_dir"      
+        replace_config_option_ksu "CONFIG_KSU" "y"
+        replace_config_option_ksu "CONFIG_SECURITY_SELINUX_ALWAYS_PERMISSIVE" "y"
+        export SELINUX_STATUS="Permissive"        
+    }
+
+    #building with ksu + permissive
+    build_permissive() {
+        cd "$work_dir"
+        echo -e "\n\n[+] Compiling KernelSU + Permissive..\n\n"
+        make ${ARGS} "$exynos_defconfig"
+        make ${ARGS} -j"$(nproc)"
+        dtb_img
+        mv "$work_dir/arch/arm64/boot/Image" "$dt_tool/AIK/split_img/boot.img-kernel"
+        checks_ksu
+    }
+
+    # === Begin of core ===
+
+    ksu_core(){
+
+        dtb_img() {
+            sudo chmod +777 $dt_tool/* -R
+            $dt_tool/mkdtimg cfg_create "$work_dir/out/dt.img" "$dt_tool/exynos9820.cfg" -d "$work_dir/arch/arm64/boot/dts/exynos"
+        }
+
+        #check if the build succeed
+        checks_ksu() {
+        if [ -f "$dt_tool/AIK/split_img/boot.img-kernel" ]; then
+            echo -e "\n\n[i] Task Finished ! \n"
+            packing_ksu
+        else
+            echo -e "\n\n[i] Build Failed :( \n"
+            exit 1
+        fi
+        }
+
+        #packing process
+        packing_ksu() {
+            echo -e "\n\n[+] Repacking boot.img..."
+            cd "$dt_tool/AIK/ramdisk"
+            if [ ! -d "debug_ramdisk" ]; then
+                mkdir -p debug_ramdisk dev metadata mnt proc second_stage_resources sys
+            fi
+            cd "$work_dir"
+            sudo bash "$repacker"
+            sudo chmod +777 "$dt_tool/AIK" -R
+            echo -e "\n\n[+] Repacking Done..!"
+            mv "$dt_tool/AIK/image-new.img" "$work_dir/out/boot.img"
+            echo -e "\n\n[i] Creating a Flashable tar..!"
+
+            cd "$work_dir/out"
+
+            if [ ! -d "${DEVICE}-KSU" ]; then
+                mkdir "${DEVICE}-KSU"
+            fi
+            if [ ! -d "${DEVICE}-KSU/${SELINUX_STATUS}" ]; then
+                mkdir "${DEVICE}-KSU/${SELINUX_STATUS}"
+            fi
+            cp "${VBMETA}" .
+            sudo chmod +777 *
+            tar -cvf "LPoS ${LPOS_KERNEL_VERSION} [KSU] [${DEVICE}] - ${SELINUX_STATUS}.tar" boot.img dt.img vbmeta.img ; rm boot.img dt.img vbmeta.img
+            mv "LPoS ${LPOS_KERNEL_VERSION} [KSU] [${DEVICE}] - ${SELINUX_STATUS}.tar" "${DEVICE}-KSU/${SELINUX_STATUS}"
+            }
+
+        #==== end of core ====
+    }
+
+    tar_xz_ksu() {
+        cd "$work_dir/out"
+        tar -cvf "LPoS [${DEVICE}][KSU].tar" "${DEVICE}-KSU"
+        xz -9 --threads=0 "LPoS [${DEVICE}][KSU].tar"
+        mv "LPoS [${DEVICE}][KSU].tar.xz" "KSU-LPoS [${DEVICE}]-${current_datetime}.xz"
+        cd "$work_dir"
+        echo -e "\n\n[i] KSU Compilation Done..🌛\n"
+    }
+
+    lets_build_kernelsu(){
+        #compiling enforcing
+        ksu_enforce
+        ksu_core
+        build_enforce
+        #compiling permissive
+        ksu_permissive
+        ksu_core
+        build_permissive
+        #packing all
+        tar_xz_ksu
+        deep_clean
+    }
+    lets_build_kernelsu
 }
 
 USER_INPUT=$1
@@ -179,7 +295,10 @@ elif [ "$USER_INPUT" == "-d" ]; then
     dirty_build
 elif [ "$USER_INPUT" == "-x" ]; then
     echo -e "\n\n[i] Cleaning the source...\n\n"
-    deep_clean    
+    deep_clean 
+elif [ "$USER_INPUT" == "-k" ]; then
+    echo -e "\n\n[i] Building KernelSU...\n\n"
+    build_ksu       
 else
-    echo -e "\n\n[x] Wrong Input..! \n\n [i] Usage : \n\n To a Clean build : build_kernel.sh -c\n To a dirty build : build_kernel.sh -d \n To Clean the source : build_kernel.sh -x\n"
+    echo -e "\n\n[x] Wrong Input..! \n\n [i] Usage : \n\n To a Clean build : build_kernel.sh -c\n To a dirty build : build_kernel.sh -d \n To Clean the source : build_kernel.sh -x\n To Build KernelSU : build_kernel.sh -k"
 fi
