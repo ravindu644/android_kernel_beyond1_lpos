@@ -7,19 +7,22 @@ ln -s /usr/bin/python2.7 "$HOME/python"
 export PATH="$HOME/":"$HOME/toolchain/proton-clang-12/bin":$PATH
 
 #saving current pwd as a variable
-work_dir="$(pwd)"
+export work_dir="$(pwd)"
 
 #path for binary files
-dt_tool="$work_dir/binaries"
-repacker="$dt_tool/AIK/repackimg.sh"
-VBMETA="$dt_tool/addons/vbmeta.img"
+export dt_tool="$work_dir/binaries"
+export repacker="$dt_tool/AIK/repackimg.sh"
+export VBMETA="$dt_tool/addons/vbmeta.img"
 
 #setting up executable permissions
 sudo chmod +775 -R "$work_dir/binaries/"
 
+#creating out folder
+mkdir out || true 
+
 #exporting variables
 export current_datetime=$(date +"%Y-%m-%d_%H-%M-%S")
-export LPOS_KERNEL_VERSION="v8.5.7"
+#export LPOS_KERNEL_VERSION="v8.5.7"
 export DEVICE="S10"
 export KBUILD_BUILD_USER="@ravindu644"
 export ARGS="
