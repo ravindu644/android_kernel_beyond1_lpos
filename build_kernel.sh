@@ -143,6 +143,10 @@ permissive() {
     replace_config_option "CONFIG_SECURITY_SELINUX_ALWAYS_PERMISSIVE" "n"
 }
 
+deep_clean(){
+    make ${ARGS} clean && make ${ARGS} mrproper
+}
+
 
 clean_build() {
     make ${ARGS} clean && make ${ARGS} mrproper
@@ -172,6 +176,9 @@ if [ "$USER_INPUT" == "-c" ]; then
 elif [ "$USER_INPUT" == "-d" ]; then
     echo -e "\n\n[i] Performing a dirty build...\n\n"
     dirty_build
+elif [ "$USER_INPUT" == "-x" ]; then
+    echo -e "\n\n[i] Cleaning the source...\n\n"
+    deep_clean    
 else
-    echo -e "\n\n[x] Wrong Input..! \n\n [i] Usage : \n\n To a Clean build : build_kernel.sh -c\n To a dirty build : build_kernel.sh -d \n"
+    echo -e "\n\n[x] Wrong Input..! \n\n [i] Usage : \n\n To a Clean build : build_kernel.sh -c\n To a dirty build : build_kernel.sh -d \n To Clean the source : build_kernel.sh -x\n"
 fi
