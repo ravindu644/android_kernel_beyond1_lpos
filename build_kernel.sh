@@ -22,7 +22,7 @@ mkdir out || true
 
 #exporting variables
 export current_datetime=$(date +"%Y-%m-%d_%H-%M-%S")
-#export LPOS_KERNEL_VERSION="v8.5.7"
+#export LPOS_KERNEL_VERSION="v8.7.1"
 export DEVICE="S10+"
 export KBUILD_BUILD_USER="@ravindu644"
 export ARGS="
@@ -149,7 +149,7 @@ clean_build() {
     fi
 
     make ${ARGS} "$exynos_defconfig"
-    make ${ARGS} -j"$(nproc)"
+    make ${ARGS} -j"$(nproc)" || exit
     dtb_img
     mv "$work_dir/arch/arm64/boot/Image" "$dt_tool/AIK/split_img/boot.img-kernel"
     export SELINUX_STATUS="Enforcing"
