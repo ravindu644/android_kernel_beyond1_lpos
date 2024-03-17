@@ -150,6 +150,7 @@ deep_clean(){
 
 clean_build() {
     make ${ARGS} clean && make ${ARGS} mrproper
+    patch -p1 < "$work_dir/ksu.patch" || true
     make ${ARGS} "$exynos_defconfig"
     make ${ARGS} -j"$(nproc)"
     dtb_img
