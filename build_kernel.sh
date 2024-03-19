@@ -283,7 +283,6 @@ build_ksu(){
         build_permissive
         #packing all
         tar_xz_ksu
-        deep_clean
     }
     lets_build_kernelsu
 }
