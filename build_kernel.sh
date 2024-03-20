@@ -149,7 +149,7 @@ clean_build() {
     fi
 
     make ${ARGS} "$exynos_defconfig"
-    make ${ARGS} -j"$(nproc)" || exit
+    make ${ARGS} -j"$(nproc)" || exit 1
     dtb_img
     mv "$work_dir/arch/arm64/boot/Image" "$dt_tool/AIK/split_img/boot.img-kernel"
     export SELINUX_STATUS="Enforcing"
@@ -161,7 +161,7 @@ clean_build() {
 dirty_build() {
     cd "$work_dir"
     make ${ARGS} "$exynos_defconfig"
-    make ${ARGS} -j"$(nproc)" || exit
+    make ${ARGS} -j"$(nproc)" || exit 1
     dtb_img
     mv "$work_dir/arch/arm64/boot/Image" "$dt_tool/AIK/split_img/boot.img-kernel"
     checks
@@ -187,7 +187,7 @@ build_ksu(){
         cd "$work_dir"
         echo -e "\n\n[+] Compiling KernelSU + Enforcing..\n\n"
         make ${ARGS} "$exynos_defconfig"
-        make ${ARGS} -j"$(nproc)" || exit
+        make ${ARGS} -j"$(nproc)" || exit 1
         dtb_img
         mv "$work_dir/arch/arm64/boot/Image" "$dt_tool/AIK/split_img/boot.img-kernel"
         checks_ksu
@@ -206,7 +206,7 @@ build_ksu(){
         cd "$work_dir"
         echo -e "\n\n[+] Compiling KernelSU + Permissive..\n\n"
         make ${ARGS} "$exynos_defconfig"
-        make ${ARGS} -j"$(nproc)" || exit
+        make ${ARGS} -j"$(nproc)" || exit 1
         dtb_img
         mv "$work_dir/arch/arm64/boot/Image" "$dt_tool/AIK/split_img/boot.img-kernel"
         checks_ksu
