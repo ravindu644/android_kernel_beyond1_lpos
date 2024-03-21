@@ -44,8 +44,8 @@ jobs:
         with:
           name: "LPoS-${{ env.LPOS_KERNEL_VERSION }}-[S10 5G]"
           path: |
-            out/LPoS*.xz
-            out/KSU*.xz
+            out/LPoS*.zip
+            out/KSU*.zip
 
       - name: Create release
         uses: ncipollo/release-action@v1
@@ -55,7 +55,7 @@ jobs:
           draft: false
           prerelease: false
           token: ${{ secrets.TOKEN }}          
-          artifacts: "out/LPoS*.xz,out/KSU*.xz"
+          artifacts: "out/LPoS*.zip,out/KSU*.zip"
           body: "Commit SHA: ${{ github.sha }}"
 
       - name: Upload to Telegram
@@ -63,7 +63,7 @@ jobs:
         with:
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          document: "out/LPoS*.xz,out/KSU*.xz"
+          document: "out/LPoS*.zip,out/KSU*.zip"
           format: html
           disable_web_page_preview: false
           message: |
