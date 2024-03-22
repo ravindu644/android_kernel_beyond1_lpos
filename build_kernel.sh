@@ -23,7 +23,7 @@ mkdir out || true
 #exporting variables
 export current_datetime=$(date +"%Y-%m-%d_%H-%M-%S")
 #export LPOS_KERNEL_VERSION="v8.7.1"
-export DEVICE="S10+"
+export DEVICE="S10"
 export KBUILD_BUILD_USER="@ravindu644"
 export ARGS="
 ARCH=arm64
