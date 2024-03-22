@@ -42,7 +42,7 @@ jobs:
       - name: Upload kernel
         uses: actions/upload-artifact@v4
         with:
-          name: "LPoS-${{ env.LPOS_KERNEL_VERSION }}-[S10 5G]"
+          name: "LPoS-${{ env.LPOS_KERNEL_VERSION }}-[S10]"
           path: |
             out/LPoS*.zip
             out/KSU*.zip
@@ -69,7 +69,7 @@ jobs:
           message: |
             <b>New Kernel Build found..! 🎉</b>
 
-            <b>Device :</b> S10 5G   
+            <b>Device :</b> S10   
             <b>Kernel Version :</b> ${{ env.LPOS_KERNEL_VERSION }}                    
             <b>Repository:</b> <a href="https://github.com/${{ github.repository }}">${{ github.repository }}</a>
             
